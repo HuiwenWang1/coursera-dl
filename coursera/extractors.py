@@ -141,6 +141,16 @@ class CourseraExtractor(PlatformExtractor):
 
                     logging.info('Processing lecture         %s (%s)',
                                  lecture.slug, typename)
+
+                    if getattr(lecture, 'is_locked', False):
+                        # Locked items (e.g. paid-only content when auditing)
+                        # cannot be fetched: Coursera answers 403.
+                        logging.warning(
+                            'Skipping locked lecture "%s" (lecture id "%s", '
+                            'reason: %s)', lecture.slug, lecture.id,
+                            getattr(lecture, 'locked_reason', None))
+                        continue
+
                     # Empty dictionary means there were no data
                     # None means an error occurred
                     links = {}

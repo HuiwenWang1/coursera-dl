@@ -49,7 +49,18 @@ import re
 import time
 import shutil
 
-from distutils.version import LooseVersion as V
+try:
+    from packaging.version import Version as V
+except ImportError:  # pragma: no cover
+    # distutils (and LooseVersion) were removed in Python 3.12.
+    def V(version):
+        """Return a comparable tuple of the leading numeric parts of a version."""
+        parts = []
+        for part in re.split(r'[.\-+]', str(version)):
+            if not part.isdigit():
+                break
+            parts.append(int(part))
+        return tuple(parts)
 
 
 # Test versions of some critical modules.

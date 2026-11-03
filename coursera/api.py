@@ -315,11 +315,19 @@ class OnDemandCourseMaterialItemsV1(object):
         @rtype: OnDemandCourseMaterialItems
         """
 
-        dom = get_page(session, OPENCOURSE_ONDEMAND_COURSE_MATERIALS,
-                       json=True,
-                       class_name=course_name)
-        return OnDemandCourseMaterialItemsV1(
-            dom['linked']['onDemandCourseMaterialItems.v1'])
+        try:
+            dom = get_page(session, OPENCOURSE_ONDEMAND_COURSE_MATERIALS,
+                           json=True,
+                           class_name=course_name, quiet=True)
+            items = dom['linked']['onDemandCourseMaterialItems.v1']
+        except (requests.exceptions.RequestException, ValueError, KeyError) as e:
+            # The onDemandCourseMaterials.v1 endpoint has been retired by
+            # Coursera; the v2 syllabus already carries the same items, so
+            # this lookup is only a best-effort fallback.
+            logging.debug('Could not fetch course material items (v1) for '
+                          '%s, continuing without them: %s', course_name, e)
+            items = []
+        return OnDemandCourseMaterialItemsV1(items)
 
     def get(self, lesson_id):
         """
@@ -485,6 +493,8 @@ class ItemV2(object):
     type_name = attr.ib()
     lesson_id = attr.ib()
     module_id = attr.ib()
+    is_locked = attr.ib(default=False)
+    locked_reason = attr.ib(default=None)
 
 
 @attr.s
@@ -500,7 +510,9 @@ class ItemsV2(object):
                     item['slug'],
                     item['contentSummary']['typeName'],
                     item['lessonId'],
-                    item['moduleId']))
+                    item['moduleId'],
+                    bool(item.get('isLocked', False)),
+                    item.get('itemLockedReasonCode')))
             for item in data
         ))
 
@@ -945,7 +957,7 @@ class CourseraOnDemand(object):
 
         def _add_asset(name, url, destination):
             filename, extension = os.path.splitext(clean_url(name))
-            if extension is '':
+            if extension == '':
                 return
 
             extension = clean_filename(
@@ -1590,7 +1602,7 @@ class CourseraOnDemand(object):
             filename, extension = os.path.splitext(clean_url(link))
             # Some courses put links to sites in supplement section, e.g.:
             # http://pandas.pydata.org/
-            if extension is '':
+            if extension == '':
                 continue
 
             # Make lowercase and cut the leading/trailing dot
