@@ -6,9 +6,9 @@
 #   COURSERA_DL_HOME=/path bash setup.sh   # use a specific checkout
 set -euo pipefail
 
-# Change this to your fork. Upstream coursera-dl/coursera-dl is unmaintained and
+# The patched fork. Upstream coursera-dl/coursera-dl is unmaintained and
 # lacks the Python 3.12+ and Coursera v2 API fixes.
-: "${COURSERA_DL_REPO:=https://github.com/coursera-dl/coursera-dl.git}"
+: "${COURSERA_DL_REPO:=https://github.com/HuiwenWang1/coursera-dl.git}"
 
 # -P: resolve symlinks, so a symlinked skill dir still finds the real repo
 here="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
